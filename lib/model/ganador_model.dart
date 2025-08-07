@@ -8,6 +8,7 @@ class GanadorWebModel {
   final String nombreCompleto;
   final String manzanaNombre;
   final String loteNombre;
+  final String dniGanador;
   final DateTime? fechaSorteo;
 
   GanadorWebModel({
@@ -17,6 +18,7 @@ class GanadorWebModel {
     required this.nombreCompleto,
     required this.manzanaNombre,
     required this.loteNombre,
+    required this.dniGanador,
     this.fechaSorteo,
   });
 
@@ -28,6 +30,7 @@ class GanadorWebModel {
       nombreCompleto: data['nombreCompleto'] ?? '',
       manzanaNombre: data['manzanaNombre'] ?? '',
       loteNombre: data['loteNombre'] ?? '',
+      dniGanador: data['dni_ganador'] ?? '',
       fechaSorteo: data['fechaSorteo'] != null
           ? (data['fechaSorteo'] as Timestamp).toDate()
           : null,
