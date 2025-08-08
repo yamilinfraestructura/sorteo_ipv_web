@@ -64,7 +64,7 @@ class HomeScreenWeb extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'POSICIONES DE ADJUDICACIÓN LOTES BARRIO VALLE DEL SOL - IPV 2025',
+          'Tabla de Posiciones - Sorteo IPV Barrio Villa del Sol',
         ),
         backgroundColor: Colors.orangeAccent,
         elevation: 4,
@@ -136,148 +136,214 @@ class HomeScreenWeb extends StatelessWidget {
           return numA.compareTo(numB);
         });
 
-        // Usamos LayoutBuilder para adaptar el GridView al tamaño de la pantalla
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Un grid de 4x5 para un total de 20 contenedores
-            const int crossAxisCount = 4;
-            const int totalRows = 5;
+        // Encontrar al último ganador de forma global
+        GanadorWebModel? ultimoGanador;
+        DateTime? ultimaFechaSorteo;
+        for (var ganadores in controller.ganadoresAgrupadosPorManzana.values) {
+          for (var ganador in ganadores) {
+            if (ultimoGanador == null ||
+                ganador.fechaSorteo!.isAfter(ultimaFechaSorteo!)) {
+              ultimoGanador = ganador;
+              ultimaFechaSorteo = ganador.fechaSorteo;
+            }
+          }
+        }
 
-            // Calculamos paddings y espaciados de forma responsive
-            final double mainPadding = width * 0.005;
-            final double cardSpacing = width * 0.005;
+        // Altura del contenedor fijo en la parte inferior
+        const double footerHeight = 60;
+        final bool showFooter = ultimoGanador != null;
 
-            // Calcula la altura de cada contenedor para que quepan 5 filas
-            final double cardHeight =
-                constraints.maxHeight / totalRows - (mainPadding * 2);
+        return Stack(
+          children: [
+            // Contenido principal de las manzanas (la lista de ganadores)
+            Positioned.fill(
+              bottom: showFooter
+                  ? footerHeight
+                  : 0, // Ajustamos el espacio para el footer
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const int crossAxisCount = 4;
+                  const int totalRows = 5;
+                  final double mainPadding = width * 0.005;
+                  final double cardSpacing = width * 0.005;
 
-            // Calcula el aspect ratio basándose en el ancho y alto del contenedor
-            final double cardWidth =
-                (constraints.maxWidth / crossAxisCount) - (mainPadding * 2);
-            final double childAspectRatio = cardWidth / cardHeight;
+                  // Ajustamos la altura de cada contenedor para que quepan 5 filas en el espacio disponible
+                  final double cardHeight =
+                      constraints.maxHeight / totalRows - (mainPadding * 2);
 
-            // Calculamos el tamaño de fuente de forma responsive
-            final double baseFontSize = width * 0.008;
+                  final double cardWidth =
+                      (constraints.maxWidth / crossAxisCount) -
+                      (mainPadding * 2);
+                  final double childAspectRatio = cardWidth / cardHeight;
+                  final double baseFontSize = width * 0.008;
 
-            return GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: cardSpacing,
-                mainAxisSpacing: cardSpacing,
-                childAspectRatio: childAspectRatio,
-              ),
-              padding: EdgeInsets.all(mainPadding),
-              itemCount: manzanasOrdenadas.length,
-              itemBuilder: (context, index) {
-                final String manzana = manzanasOrdenadas[index];
-                final List<GanadorWebModel> ganadoresEnManzana =
-                    controller.ganadoresAgrupadosPorManzana[manzana]!;
-
-                // Ordenamos los ganadores de forma inversa (el último agregado, primero)
-                final List<GanadorWebModel> ganadoresInvertidos =
-                    ganadoresEnManzana.reversed.toList();
-
-                return Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(mainPadding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MANZANA: $manzana',
-                          style: TextStyle(
-                            fontSize: baseFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepOrange,
-                          ),
-                        ),
-                        const Divider(height: 10, thickness: 1),
-                        // Scroll interno para la lista de ganadores
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: List.generate(ganadoresInvertidos.length, (
-                                innerIndex,
-                              ) {
-                                final ganador = ganadoresInvertidos[innerIndex];
-                                // El último ganador es ahora el primero en la lista invertida (índice 0)
-                                final isLastWinner = innerIndex == 0;
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: height * 0.002,
-                                  ),
-                                  child: Container(
-                                    // Agregamos un Container para el efecto de fondo
-                                    padding: EdgeInsets.all(width * 0.003),
-                                    decoration: BoxDecoration(
-                                      color: isLastWinner
-                                          ? Colors.green[50]
-                                          : Colors.transparent,
-                                      borderRadius: isLastWinner
-                                          ? BorderRadius.circular(4)
-                                          : null,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              'LOTE ${ganador.loteNombre}: ${ganador.nombreCompleto}',
-                                              style: TextStyle(
-                                                fontSize: isLastWinner
-                                                    ? baseFontSize * 1.1
-                                                    : baseFontSize,
-                                                fontWeight: isLastWinner
-                                                    ? FontWeight.bold
-                                                    : FontWeight.w600,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              ' - DNI: ${ganador.dniGanador}',
-                                              style: TextStyle(
-                                                fontSize: isLastWinner
-                                                    ? baseFontSize * 1.1
-                                                    : baseFontSize,
-                                                fontWeight: isLastWinner
-                                                    ? FontWeight.bold
-                                                    : FontWeight.w600,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          DateFormat(
-                                            'HH:mm',
-                                          ).format(ganador.fechaSorteo!),
-                                          style: TextStyle(
-                                            fontSize: baseFontSize * 0.8,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
-                      ],
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: cardSpacing,
+                      mainAxisSpacing: cardSpacing,
+                      childAspectRatio: childAspectRatio,
                     ),
+                    padding: EdgeInsets.all(mainPadding),
+                    itemCount: manzanasOrdenadas.length,
+                    itemBuilder: (context, index) {
+                      final String manzana = manzanasOrdenadas[index];
+                      final List<GanadorWebModel> ganadoresEnManzana =
+                          controller.ganadoresAgrupadosPorManzana[manzana]!;
+
+                      final List<GanadorWebModel> ganadoresInvertidos =
+                          ganadoresEnManzana.reversed.toList();
+
+                      return Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(mainPadding),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'MANZANA: $manzana',
+                                style: TextStyle(
+                                  fontSize: baseFontSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.deepOrange,
+                                ),
+                              ),
+                              const Divider(height: 10, thickness: 1),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: List.generate(
+                                      ganadoresInvertidos.length,
+                                      (innerIndex) {
+                                        final ganador =
+                                            ganadoresInvertidos[innerIndex];
+                                        final isLastWinner = innerIndex == 0;
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: height * 0.002,
+                                          ),
+                                          child: Container(
+                                            padding: EdgeInsets.all(
+                                              width * 0.003,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isLastWinner
+                                                  ? Colors.green.shade200
+                                                  : Colors.transparent,
+                                              borderRadius: isLastWinner
+                                                  ? BorderRadius.circular(4)
+                                                  : null,
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'LOTE ${ganador.loteNombre}: ${ganador.nombreCompleto}',
+                                                  style: TextStyle(
+                                                    fontSize: isLastWinner
+                                                        ? baseFontSize * 1.1
+                                                        : baseFontSize,
+                                                    fontWeight: isLastWinner
+                                                        ? FontWeight.bold
+                                                        : FontWeight.w600,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  'DNI: ${ganador.dniGanador}',
+                                                  style: TextStyle(
+                                                    fontSize: isLastWinner
+                                                        ? baseFontSize * 1.1
+                                                        : baseFontSize,
+                                                    fontWeight: isLastWinner
+                                                        ? FontWeight.bold
+                                                        : FontWeight.w600,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  DateFormat('HH:mm').format(
+                                                    ganador.fechaSorteo!,
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        baseFontSize * 0.8,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            // Contenedor fijo en la parte inferior para el último ganador
+            if (showFooter)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: footerHeight,
+                child: Container(
+                  width: double.infinity,
+                  color: Colors.green.shade400,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '¡ÚLTIMO POSICIONADO! MANZANA ${ultimoGanador!.manzanaNombre}, LOTE ${ultimoGanador.loteNombre}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 18,
+                        ),
+                      ),
+                      SizedBox(width: width * 0.02),
+                      Text(
+                        '${ultimoGanador.nombreCompleto}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      SizedBox(width: width * 0.015),
+                      Text(
+                        'DNI: ${ultimoGanador.dniGanador}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            );
-          },
+                ),
+              ),
+          ],
         );
       }),
     );
